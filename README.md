@@ -2,6 +2,7 @@
 Repository for reproducing the results presented in the paper "Tuning gradient boosting for imbalanced bioassay modelling".
 
 ## Overview
+**datasets:** .csv files of all publicly available datasets evaluated in the paper.<br />
 **losses:** folder containing the implementation of the custom loss functions and related classes.<br />
 **misc:** folder containing utility functions to run the benchmarks.<br />
 **scripts:** collection of scripts to reproduce the results presented in the paper.<br />
