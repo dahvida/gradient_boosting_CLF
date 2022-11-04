@@ -3,8 +3,9 @@ Script to get the results for the MUV dataset
 """
 import sys
 sys.path.append('..')
-from misc.losses_eval import eval_loss_molnet
+from misc.losses_eval import *
 from misc.utils import *
+from misc.loaders import *
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -35,12 +36,12 @@ ldam_box = np.mean(ldam_box, axis=1)
 
 #run benchmarks on baseline
 loss = None
-wce_box = np.empty((50, task_n))
+wce_box = np.empty((25, 17, 8))   
 for j in range(17):
     x, y = molnet_loader(dataset, j)
     search = create_param_space(loss)
     optimum = optimize_CV(x, y, loss, search, metric=average_precision_score)
-    for i in range(50):
+    for i in range(25):
         train_x, val_x, train_y, val_y = train_test_split(x, y, 
                                                           stratify=y,
                                                           test_size=0.2)
@@ -48,23 +49,42 @@ for j in range(17):
                                                         stratify=val_y, 
                                                         test_size=0.5)
         model = train_sklearn_model(train_x, train_y, val_x, val_y, optimum)
-        preds = model.predict_proba(test_x)[:,1]
-        wce_box[i, j] = average_precision_score(test_y, preds)
+        val_p = model.predict_proba(val_x)[:,1]
+        test_p = model.predict_proba(test_x)[:,1]
+            
+        roc, pr, acc, bacc, pre, rec, f1, mcc = get_metrics(val_y, val_p, test_y, test_p)
+        wce_box[i, j, 0] = roc
+        wce_box[i, j, 1] = pr
+        wce_box[i, j, 2] = acc
+        wce_box[i, j, 3] = bacc
+        wce_box[i, j, 4] = pre
+        wce_box[i, j, 5] = rec
+        wce_box[i, j, 6] = f1
+        wce_box[i, j, 7] = mcc 
 wce_box = np.mean(wce_box, axis=1)
 
-output = pd.DataFrame({
-                            "WCE": wce_box,
-                            "Focal loss": fc_box,
-                            "Logit-adjusted loss": la_box,
-                            "Equalization loss": eq_box,
-                            "LDAM loss": ldam_box})
-
-del (train_x, val_x, train_y, val_y, test_x, test_y, model, preds, fc_box, la_box,
-     eq_box, ldam_box, loss, search, optimum, wce_box, x, y)
+#package
+col_names = ["ROC-AUC",
+	    "PR-AUC",
+	    "ACCURACY",
+	    "BALANCED ACCURACY",
+	    "PRECISION",
+	    "RECALL",
+	    "F1 SCORE",
+	    "MCC"]
+fc_output = pd.DataFrame(fc_box, columns=col_names)
+la_output = pd.DataFrame(la_box, columns=col_names)
+eq_output = pd.DataFrame(eq_box, columns=col_names)
+ldam_output = pd.DataFrame(ldam_box, columns=col_names)
+wce_output = pd.DataFrame(wce_box, columns=col_names)
 
 if to_csv is True:
-    name = "output/" + dataset + "_summary.csv"
-    output.to_csv(name)
+    prefix = "../output/" + dataset + "_"
+    fc_output.to_csv(prefix + "fc.csv")
+    la_output.to_csv(prefix + "la.csv")
+    eq_output.to_csv(prefix + "eq.csv")
+    ldam_output.to_csv(prefix + "ldam.csv")
+    wce_output.to_csv(prefix + "wce.csv")
     
     
     

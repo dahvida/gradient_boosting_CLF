@@ -21,7 +21,7 @@ import numpy as np
 
 def eval_loss_molnet(loss_name, dataset_name, tasks, metric):
     #preallocate results matrix (n_metrics, n_tasks)
-    results = np.empty((50, tasks))        
+    results = np.empty((25, tasks, 8))       
                                                  
     for j in range(tasks):
         #fetch processed dataset
@@ -31,7 +31,7 @@ def eval_loss_molnet(loss_name, dataset_name, tasks, metric):
         search = create_param_space(loss_name)                                              
         optimum = optimize_CV(x, y, loss_name, search, metric = metric)   
                  
-        for i in range(50):
+        for i in range(25):
             #get random splits (80:10:10)
             train_x, val_x, train_y, val_y = train_test_split(x, y,
                                                               stratify=y,
@@ -49,8 +49,17 @@ def eval_loss_molnet(loss_name, dataset_name, tasks, metric):
             model = train_model(train, val, objective, optimum)                             
             
             #get adjusted predictions and store results
-            preds = expit(model.predict(test_x) + objective.loss_function.init_score)       
-            results[i, j] = metric(test_y, preds)                                          
+            val_p = expit(model.predict(val_x) + objective.loss_function.init_score)
+            test_p = expit(model.predict(test_x) + objective.loss_function.init_score)
+            roc, pr, acc, bacc, pre, rec, f1, mcc = get_metrics(val_y, val_p, test_y, test_p)
+            results[i, j, 0] = roc
+            results[i, j, 1] = pr
+            results[i, j, 2] = acc
+            results[i, j, 3] = bacc
+            results[i, j, 4] = pre
+            results[i, j, 5] = rec
+            results[i, j, 6] = f1
+            results[i, j, 7] = mcc                                   
     
     return results
 
@@ -58,7 +67,7 @@ def eval_loss_molnet(loss_name, dataset_name, tasks, metric):
 
 def eval_loss_moldata(loss_name, dataset_name, tasks):
     #preallocate results matrix (n_replicates, n_tasks, n_metrics)
-    results = np.empty((5, tasks, 5))
+    results = np.empty((5, tasks, 8))
     
     for j in range(tasks):
         #fetch processed dataset
@@ -81,15 +90,18 @@ def eval_loss_moldata(loss_name, dataset_name, tasks):
             
             #get adjusted predictions for both val and test
             val_p = expit(model.predict(val_x) + objective.loss_function.init_score)
-            test_p = expit(model.predict(val_x) + objective.loss_function.init_score)
+            test_p = expit(model.predict(test_x) + objective.loss_function.init_score)
             
             #get all metrics and store results
-            acc, pre, rec, f1, roc = get_metrics(val_y, val_p, test_y, test_p)
-            results[i, j, 0] = acc
-            results[i, j, 1] = pre
-            results[i, j, 2] = rec
-            results[i, j, 3] = f1
-            results[i, j, 4] = roc
+            roc, pr, acc, bacc, pre, rec, f1, mcc = get_metrics(val_y, val_p, test_y, test_p)
+            results[i, j, 0] = roc
+            results[i, j, 1] = pr
+            results[i, j, 2] = acc
+            results[i, j, 3] = bacc
+            results[i, j, 4] = pre
+            results[i, j, 5] = rec
+            results[i, j, 6] = f1
+            results[i, j, 7] = mcc
             
     return results
 
@@ -112,10 +124,16 @@ def get_metrics(val_y, val_p, test_y, test_p):
     
     #compute all metrics
     roc = roc_auc_score(test_y, test_p)
+    pr = average_precision_score(test_y, test_p)
     acc = accuracy_score(test_y, test_l)
+    bacc = balanced_accuracy_score(test_y, test_l)
     pre = precision_score(test_y, test_l)
     rec = recall_score(test_y, test_l)
     f1 = f1_score(test_y, test_l)
+    mcc = matthews_corrcoef(test_y, test_l)
     
-    return acc, pre, rec, f1, roc  
+    return roc, pr, acc, bacc, pre, rec, f1, mcc
+
+
+
 

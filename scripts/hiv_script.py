@@ -3,8 +3,9 @@ Script to get the results for the HIV dataset
 """
 import sys
 sys.path.append('..')
-from misc.losses_eval import eval_loss_molnet
+from misc.losses_eval import *
 from misc.utils import *
+from misc.loaders import *
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -22,24 +23,24 @@ to_csv = True
 
 #run benchmarks on custom loss function
 fc_box = eval_loss_molnet("Focal_loss", dataset, task_n, roc_auc_score)
-fc_box = fc_box[:,0]
+fc_box = np.mean(fc_box, axis=1)
 
 la_box = eval_loss_molnet("LA_loss", dataset, task_n, roc_auc_score)
-la_box = la_box[:,0]
+la_box = np.mean(la_box, axis=1)
 
 eq_box = eval_loss_molnet("EQ_loss", dataset, task_n, roc_auc_score)
-eq_box = eq_box[:,0]
+eq_box = np.mean(eq_box, axis=1)
 
 ldam_box = eval_loss_molnet("LDAM_loss", dataset, task_n, roc_auc_score)
-ldam_box = ldam_box[:,0]
+ldam_box = np.mean(ldam_box, axis=1)
 
 #run benchmarks on baseline
 x, y = molnet_loader(dataset, 0)
 loss = None
 search = create_param_space(loss)
 optimum = optimize_CV(x, y, loss, search)
-wce_box = []
-for i in range(50):
+wce_box = np.empty((25, 1, 8))   
+for i in range(25):
         train_x, val_x, train_y, val_y = train_test_split(x, y,
                                                           stratify=y,
                                                           test_size=0.2)
@@ -47,21 +48,43 @@ for i in range(50):
                                                         stratify=val_y,
                                                         test_size=0.5)
         model = train_sklearn_model(train_x, train_y, val_x, val_y, optimum)
-        preds = model.predict_proba(test_x)[:,1]
-        wce_box.append(roc_auc_score(test_y, preds))
+        val_p = model.predict_proba(val_x)[:,1]
+        test_p = model.predict_proba(test_x)[:,1]
+            
+        roc, pr, acc, bacc, pre, rec, f1, mcc = get_metrics(val_y, val_p, test_y, test_p)
+        wce_box[i, 0, 0] = roc
+        wce_box[i, 0, 1] = pr
+        wce_box[i, 0, 2] = acc
+        wce_box[i, 0, 3] = bacc
+        wce_box[i, 0, 4] = pre
+        wce_box[i, 0, 5] = rec
+        wce_box[i, 0, 6] = f1
+        wce_box[i, 0, 7] = mcc 
+wce_box = np.mean(wce_box, axis=1)
 
-output = pd.DataFrame({
-                            "WCE": wce_box,
-                            "Focal loss": fc_box,
-                            "Logit-adjusted loss": la_box,
-                            "Equalization loss": eq_box,
-                            "LDAM loss": ldam_box})
-
-del (train_x, val_x, train_y, val_y, test_x, test_y, model, preds, fc_box, la_box,
-     eq_box, ldam_box, loss, search, optimum, wce_box, x, y)
+#package
+col_names = ["ROC-AUC",
+	    "PR-AUC",
+	    "ACCURACY",
+	    "BALANCED ACCURACY",
+	    "PRECISION",
+	    "RECALL",
+	    "F1 SCORE",
+	    "MCC"]
+fc_output = pd.DataFrame(fc_box, columns=col_names)
+la_output = pd.DataFrame(la_box, columns=col_names)
+eq_output = pd.DataFrame(eq_box, columns=col_names)
+ldam_output = pd.DataFrame(ldam_box, columns=col_names)
+wce_output = pd.DataFrame(wce_box, columns=col_names)
 
 if to_csv is True:
-    name = "output/" + dataset + "_summary.csv"
-    output.to_csv(name)
+    prefix = "../output/" + dataset + "_"
+    fc_output.to_csv(prefix + "fc.csv")
+    la_output.to_csv(prefix + "la.csv")
+    eq_output.to_csv(prefix + "eq.csv")
+    ldam_output.to_csv(prefix + "ldam.csv")
+    wce_output.to_csv(prefix + "wce.csv")
+    
+    
 
 

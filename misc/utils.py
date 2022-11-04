@@ -40,7 +40,7 @@ def train_model(train, val, objective, params):
                       fobj=objective.get_gradient,
                       feval=objective.get_metric,
                       valid_sets=val,
-                      num_boost_round=5000,
+                      num_boost_round=1000,
                       callbacks = [early_stopping])
 
     return model
@@ -58,7 +58,7 @@ def train_sklearn_model(x_train, y_train, x_val, y_val, params):
             feature_fraction = params["feature_fraction"],
             class_weight = "balanced",
             seed = np.random.randint(0, 100),
-            n_estimators = 5000
+            n_estimators = 1000
             )
         model.fit(x_train, y_train, 
                  eval_metric="cross_entropy",
