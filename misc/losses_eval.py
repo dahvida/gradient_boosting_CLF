@@ -21,7 +21,7 @@ import numpy as np
 
 def eval_loss_molnet(loss_name, dataset_name, tasks, metric):
     #preallocate results matrix (n_metrics, n_tasks)
-    results = np.empty((25, tasks, 8))       
+    results = np.empty((50, tasks, 8))       
                                                  
     for j in range(tasks):
         #fetch processed dataset
@@ -31,7 +31,7 @@ def eval_loss_molnet(loss_name, dataset_name, tasks, metric):
         search = create_param_space(loss_name)                                              
         optimum = optimize_CV(x, y, loss_name, search, metric = metric)   
                  
-        for i in range(25):
+        for i in range(50):
             #get random splits (80:10:10)
             train_x, val_x, train_y, val_y = train_test_split(x, y,
                                                               stratify=y,

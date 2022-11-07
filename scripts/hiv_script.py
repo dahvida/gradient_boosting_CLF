@@ -39,8 +39,8 @@ x, y = molnet_loader(dataset, 0)
 loss = None
 search = create_param_space(loss)
 optimum = optimize_CV(x, y, loss, search)
-wce_box = np.empty((25, 1, 8))   
-for i in range(25):
+wce_box = np.empty((50, 1, 8))   
+for i in range(50):
         train_x, val_x, train_y, val_y = train_test_split(x, y,
                                                           stratify=y,
                                                           test_size=0.2)

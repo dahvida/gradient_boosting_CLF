@@ -46,7 +46,7 @@ for i in range(len(datasets)):
             if datasets[i] == "phos" or datasets[i] == "ntp":
                 p_val_box[i, k, j] = t_test(a, b, 5, 5)
             else:
-                p_val_box[i, k, j] = t_test(a, b, 40, 40)
+                p_val_box[i, k, j] = t_test(a, b, 50, 50)
 
 fc = pd.DataFrame(p_val_box[:,:,0], columns = col_names)
 fc["Dataset"] = datasets

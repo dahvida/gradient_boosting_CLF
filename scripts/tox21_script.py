@@ -36,12 +36,12 @@ ldam_box = np.mean(ldam_box, axis=1)
 
 #run benchmarks on baseline
 loss = None
-wce_box = np.empty((25, 12, 8))   
+wce_box = np.empty((50, 12, 8))   
 for j in range(12):
     x, y = molnet_loader(dataset, j)
     search = create_param_space(loss)
     optimum = optimize_CV(x, y, loss, search)
-    for i in range(25):
+    for i in range(50):
         train_x, val_x, train_y, val_y = train_test_split(x, y, 
                                                           stratify=y, 
                                                           test_size=0.2)
