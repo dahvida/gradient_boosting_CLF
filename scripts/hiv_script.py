@@ -28,8 +28,13 @@ fc_box = np.mean(fc_box, axis=1)
 la_box = eval_loss_molnet("LA_loss", dataset, task_n, roc_auc_score)
 la_box = np.mean(la_box, axis=1)
 
+<<<<<<< HEAD
 #eq_box = eval_loss_molnet("EQ_loss", dataset, task_n, roc_auc_score)
 #eq_box = np.mean(eq_box, axis=1)
+=======
+eq_box = eval_loss_molnet("EQ_loss", dataset, task_n, roc_auc_score)
+eq_box = np.mean(eq_box, axis=1)
+>>>>>>> de427d45de1988780e4fdd8c742a824b237cb733
 
 ldam_box = eval_loss_molnet("LDAM_loss", dataset, task_n, roc_auc_score)
 ldam_box = np.mean(ldam_box, axis=1)
@@ -75,7 +80,11 @@ col_names = ["ROC-AUC",
 	    "MCC"]
 fc_output = pd.DataFrame(fc_box, columns=col_names)
 la_output = pd.DataFrame(la_box, columns=col_names)
+<<<<<<< HEAD
 #eq_output = pd.DataFrame(eq_box, columns=col_names)
+=======
+eq_output = pd.DataFrame(eq_box, columns=col_names)
+>>>>>>> de427d45de1988780e4fdd8c742a824b237cb733
 ldam_output = pd.DataFrame(ldam_box, columns=col_names)
 wce_output = pd.DataFrame(wce_box, columns=col_names)
 
@@ -83,7 +92,11 @@ if to_csv is True:
     prefix = "../output/" + dataset + "_"
     fc_output.to_csv(prefix + "fc.csv")
     la_output.to_csv(prefix + "la.csv")
+<<<<<<< HEAD
     #eq_output.to_csv(prefix + "eq.csv")
+=======
+    eq_output.to_csv(prefix + "eq.csv")
+>>>>>>> de427d45de1988780e4fdd8c742a824b237cb733
     ldam_output.to_csv(prefix + "ldam.csv")
     wce_output.to_csv(prefix + "wce.csv")
     
