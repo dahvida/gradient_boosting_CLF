@@ -28,13 +28,12 @@ def train_model(train, val, objective, params):
                             'num_leaves':           int(params["num_leaves"]),
                             'learning_rate':        params["learning_rate"],
                             'max_depth':            int(params["max_depth"]),
-                            "max_bin":              int(params["max_bin"]),
                             'min_data_in_leaf':     int(params["min_data_in_leaf"]),
                             'lambda_l1':            params["lambda_l1"],
                             'lambda_l2':            params["lambda_l2"],
                             "feature_fraction":     params["feature_fraction"],
                             "verbosity":            -100,
-                            "seed":                 np.random.randint(0, 100)
+                            "seed":                 0
                         },
                       train_set = train,
                       fobj=objective.get_gradient,
@@ -51,13 +50,12 @@ def train_sklearn_model(x_train, y_train, x_val, y_val, params):
             num_leaves = int(params["num_leaves"]),
             learning_rate = params["learning_rate"],
             max_depth = int(params["max_depth"]),
-            max_bin = int(params["max_bin"]),
             min_child_samples = int(params["min_data_in_leaf"]),
             reg_alpha = params["lambda_l1"],
             reg_lambda = params["lambda_l2"],
-            feature_fraction = params["feature_fraction"],
+            colsample_bytree = params["feature_fraction"],
             class_weight = "balanced",
-            seed = np.random.randint(0, 100),
+            seed = 0,
             n_estimators = 5000
             )
         model.fit(x_train, y_train, 
@@ -96,12 +94,12 @@ def create_param_space(loss_name):
     
         if loss_name == "LDAM_loss":
             loss_params = {
-            'max_m':            hp.loguniform('max_m', -10, np.log(20)),
+            'max_m':            hp.uniform('max_m', 0, 20),
             'class_weight':     hp.choice('class_weight', ["balanced", "other"])
             }
         elif loss_name == "Focal_loss":
             loss_params = {
-            'gamma':            hp.loguniform('gamma', -10, np.log(20)),
+            'gamma':            hp.uniform('gamma', 0, 10),
             'class_weight':     hp.choice('class_weight', ["balanced", "other"])
             }
         elif loss_name == "EQ_loss":
@@ -111,19 +109,18 @@ def create_param_space(loss_name):
             }
         elif loss_name == "LA_loss":
             loss_params = {
-            'tau':              hp.loguniform('tau', -10, np.log(20)),
+            'tau':              hp.loguniform('tau', 0, 10),
             'class_weight':     hp.choice('class_weight', ["balanced", "other"])
             }
             
         params = {
-            'num_leaves':           hp.qloguniform('num_leaves', np.log(10), np.log(10000), 1),
+            'num_leaves':           hp.qloguniform('num_leaves', np.log(10), np.log(4096), 1),
             'learning_rate':        hp.loguniform('learning_rate', np.log(0.001), np.log(0.3)),
             'max_depth':            hp.quniform('max_depth', 3, 12, 1),
-            "max_bin":              hp.quniform("max_bin", 100, 400, 5),
             'min_data_in_leaf':     hp.qloguniform('min_data_in_leaf', 0, 3, 1),
             'lambda_l1':            hp.loguniform('lambda_l1', -5, 2),
             'lambda_l2':            hp.loguniform('lambda_l2', -5, 2),
-            "feature_fraction":     hp.uniform('feature_fraction', 0.1, 0.99),
+            "feature_fraction":     hp.uniform('feature_fraction', 0.5, 0.99),
         }
         
         if loss_name != None:
@@ -138,7 +135,7 @@ def optimize(
                  x_val, y_val,
                  loss_name,
                  search,
-                 iters = 20,
+                 iters = 50,
                  metric = roc_auc_score
                  ) -> dict:
     
@@ -166,6 +163,7 @@ def optimize(
                 algo = tpe.suggest,
                 max_evals = iters,    
                 trials = trials,
+                rstate=np.random.default_rng(0)
                 )
     
             return optimum
@@ -174,7 +172,7 @@ def optimize_CV(
           x, y,
           loss_name,
           search,
-          iters = 20,
+          iters = 50,
           splits = 3,
           metric = roc_auc_score
         ):
@@ -185,7 +183,8 @@ def optimize_CV(
                 params = args
                 performance_box = []
                 for i in range(splits):
-                    x1, x2, y1, y2 = train_test_split(x, y, stratify=y, test_size=0.2)    
+                    x1, x2, y1, y2 = train_test_split(x, y, stratify=y, test_size=0.2,
+                                                      random_state=i)    
                     if loss_name != None:
                         objective = create_objective(loss_name, params, y1)
                         train = lgb.Dataset(x1, y1)
@@ -206,6 +205,7 @@ def optimize_CV(
                 algo = tpe.suggest,
                 max_evals = iters,    
                 trials = trials,
+                rstate=np.random.default_rng(0)
                 )
     
         return optimum
